@@ -7,9 +7,21 @@ from xvideos.utils import *
 
 
 class VideoReader(object):
-    '''
-    Class for video reading using opencv
-    '''
+    """
+    Class for video reading using opencv.
+
+    Attributes
+    ----------
+    source : Union[str, int]
+        Video source.
+
+    batch_size : int, default=1
+        Number of frames, which will be returned.
+
+    buffer_size : int, default=1
+        Number of frames in internal buffer.
+
+    """
 
     def __init__(
             self,
@@ -17,11 +29,6 @@ class VideoReader(object):
             batch_size: int = 1,
             buffer_size: int = 1
     ):
-        '''
-        :param source: video source
-        :param batch_size: number of frames, which will be returned
-        :param buffer_size: number of frames in internal buffer
-        '''
         self.capture = cv2.VideoCapture(source)
         self.capture_info = self.__info()
         self.batch_size = batch_size
@@ -49,10 +56,15 @@ class VideoReader(object):
                 self.can_get.set()
 
     def get(self) -> Tuple[bool, List]:
-        '''
-        Get batch of frames from buffer
-        :return: pair (bool flag, list of frames). If capture has ended, then flag = False, else flag = True
-        '''
+        """
+
+        Get batch of frames from buffer.
+
+        Returns
+        -------
+        Tuple[bool, List]
+            pair (bool flag, list of frames). If capture has ended, then flag = False, else flag = True
+        """
         self.can_get.wait()
         batch = self.buffer[:self.batch_size]
         self.buffer = self.buffer[self.batch_size:]
