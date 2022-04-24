@@ -23,7 +23,9 @@ class VideoReader(object):
 
     Examples
     --------
-    >>> reader = VideoReader(source=0, batch_size=32, buffer_size=128)
+    >>> from xvideos import VideoReader
+    ...
+    ... reader = VideoReader(source=0, batch_size=32, buffer_size=128)
     ... while True:
     ...     flag, batch = reader.get()
     ...     if not flag:
@@ -31,7 +33,9 @@ class VideoReader(object):
 
     You can read video in while true loop and stop him when video has ended.
 
-    >>> reader = VideoReader(source='./test.mp4')
+    >>> from xvideos import VideoReader
+    ...
+    ... reader = VideoReader(source='./test.mp4')
     ... reader.info
 
     Using property "info" you can get information about video (for example: fps, number of frames and video duration).
