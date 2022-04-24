@@ -459,7 +459,7 @@ var Search = {
     for (file in fileMap) {
       var valid = true;
 
-      // check if all requirements are matched
+      // check if all requirements.txt are matched
       var filteredTermCount = // as search terms with length < 3 are discarded: ignore
         searchterms.filter(function(term){return term.length > 2}).length
       if (
