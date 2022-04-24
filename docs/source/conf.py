@@ -64,5 +64,5 @@ html_context = {
     'github_user': 'tam2511',
     'github_repo': 'xvideos',
     'github_version': 'master',
-    'conf_py_path': '/source/'
+    'conf_py_path': '/docs/source/'
 }
