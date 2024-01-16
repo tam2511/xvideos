@@ -1,4 +1,4 @@
-from typing import List, Tuple, Optional
+from typing import List, Tuple, Optional, Union
 from threading import Thread
 from queue import Queue
 import cv2
@@ -20,22 +20,32 @@ class VideoReader(object):
     buffer_size : int, default=1
         Number of frames in internal buffer.
 
-    rgb2bgr : bool, default=False
-        Flag for transformation RGB2BGR
-
     Examples
     --------
     >>> from xvideos import VideoReader
     ...
-    ... reader = VideoReader(source='./test.mp4', batch_size=32, buffer_size=128)
+    ... reader = VideoReader(source=0, batch_size=32, buffer_size=128)
     ... while True:
     ...     flag, batch = reader.get()
     ...     if not flag:
     ...         break
+
+    You can read video in while true loop and stop him when video has ended.
+
+    >>> from xvideos import VideoReader
+    ...
+    ... reader = VideoReader(source='./test.mp4')
+    ... reader.fps
+    ... reader.frame_count
+    ... reader.frame_duration
+    ... reader.video_duration
+
+    Using property "fps", "frame_count", "frame_duration", "video_duration" you can get information about video.
+
     """
     def __init__(
             self,
-            source: str,
+            source: Union[str, int],
             batch_size: int = 1,
             buffer_size: int = 1,
             *,
