@@ -6,6 +6,33 @@ import numpy as np
 
 
 class VideoReader(object):
+    """
+    Class for video reading using opencv.
+
+    Attributes
+    ----------
+    source : Union[str, int]
+        Video source.
+
+    batch_size : int, default=1
+        Number of frames, which will be returned.
+
+    buffer_size : int, default=1
+        Number of frames in internal buffer.
+
+    rgb2bgr : bool, default=False
+        Flag for transformation RGB2BGR
+
+    Examples
+    --------
+    >>> from xvideos import VideoReader
+    ...
+    ... reader = VideoReader(source='./test.mp4', batch_size=32, buffer_size=128)
+    ... while True:
+    ...     flag, batch = reader.get()
+    ...     if not flag:
+    ...         break
+    """
     def __init__(
             self,
             source: str,
