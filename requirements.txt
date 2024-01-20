@@ -1,2 +1,5 @@
 pip>=21.0.1
-opencv-python
+opencv-python~=4.9.0.80
+numpy~=1.26.3
+xvideos~=0.3
+setuptools~=68.2.0

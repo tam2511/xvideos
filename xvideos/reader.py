@@ -1,9 +1,8 @@
-import threading
-import logging
-import sys
-from typing import Union, Tuple, List, Dict
-
-from xvideos.utils import *
+from typing import List, Tuple, Optional, Union
+from threading import Thread
+from queue import Queue
+import cv2
+import numpy as np
 
 
 class VideoReader(object):
@@ -36,89 +35,77 @@ class VideoReader(object):
     >>> from xvideos import VideoReader
     ...
     ... reader = VideoReader(source='./test.mp4')
-    ... reader.info
+    ... reader.fps
+    ... reader.frame_count
+    ... reader.frame_duration
+    ... reader.video_duration
 
-    Using property "info" you can get information about video (for example: fps, number of frames and video duration).
+    Using property "fps", "frame_count", "frame_duration", "video_duration" you can get information about video.
 
     """
-
     def __init__(
             self,
             source: Union[str, int],
             batch_size: int = 1,
-            buffer_size: int = 1
+            buffer_size: int = 1,
+            *,
+            bgr2rgb: bool = False
     ):
-        self.capture = cv2.VideoCapture(source)
-        self.capture_info = self.__info()
-        self.batch_size = batch_size
-        self.buffer_size = buffer_size
+        self._capture = cv2.VideoCapture(source)
 
-        self.buffer = []
-        self.semaphore = threading.Semaphore(value=buffer_size)
-        self.can_get = threading.Event()
-        self.end = False
-        threading.Thread(target=self.__read_video).start()
+        if not self._capture.isOpened():
+            raise FileNotFoundError
 
-    def __read_video(self):
-        if not self.capture.isOpened():
-            logging.error('Capture is not opened.')
-            return
+        self._batch_size = batch_size
+        self._buffer = Queue(maxsize=buffer_size)
+        self._bgr2rgb = bgr2rgb
+        self._is_alive = True
+        Thread(target=self._read_video, daemon=True).start()
+
+    def _read_video(self) -> None:
         while True:
-            status, frame = self.capture.read()
-            if not status:
-                self.can_get.set()
-                self.end = True
+            flag, frame = self._capture.read()
+
+            if not flag:
+                self._is_alive = False
+                self._buffer.put(None)
                 break
-            self.semaphore.acquire()
-            self.buffer.append(frame)
-            if len(self.buffer) >= self.batch_size:
-                self.can_get.set()
 
-    def get(self) -> Tuple[bool, List]:
-        """
+            if self._bgr2rgb:
+                frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
 
-        Get batch of frames from buffer.
+            self._buffer.put(frame)
 
-        Returns
-        -------
-        Tuple[bool, List]
-            pair (bool flag, list of frames). If capture has ended, then flag = False, else flag = True
-        """
-        self.can_get.wait()
-        batch = self.buffer[:self.batch_size]
-        self.buffer = self.buffer[self.batch_size:]
-        if sys.version_info[0] == 3 and sys.version_info[1] >= 9:
-            self.semaphore.release(n=len(batch))
-        else:
-            for _ in range(len(batch)):
-                self.semaphore.release()
-        if len(self.buffer) < self.batch_size:
-            self.can_get.clear()
-        return not self.end, batch
+        self._capture.release()
 
-    def __info(self) -> Dict:
-        '''
-        Return information of capture
-        :return: dict with attributes of capture
-        '''
-        info = {}
-        try:
-            info['fps'] = get_fps(self.capture)
-        except Exception as e:
-            logging.warning(f'Failed to calculate fps: {e}')
-        try:
-            info['num_frames'] = count_frames(self.capture)
-        except Exception as e:
-            logging.warning(f'Failed to calculate number of frames: {e}')
-        try:
-            info['duration'] = video_duration(self.capture)
-        except Exception as e:
-            logging.warning(f'Failed to calculate duration of video: {e}')
-        return info
+    def get(self) -> Tuple[bool, Optional[List[np.ndarray]]]:
+        batch = []
+
+        while (self._is_alive or not self._buffer.empty()) and len(batch) != self._batch_size:
+            frame = self._buffer.get()
+
+            if frame is None:
+                break
+
+            batch.append(frame)
+
+        if not batch:
+            return False, None
+
+        return True, batch
 
     @property
-    def info(self):
-        '''
-        Info of video capture
-        '''
-        return self.capture_info
+    def fps(self):
+        return self._capture.get(cv2.CAP_PROP_FPS)
+
+    @property
+    def frame_count(self):
+        return self._capture.get(cv2.CAP_PROP_FRAME_COUNT)
+
+    @property
+    def frame_duration(self):
+        return 1000 / self.fps
+
+    @property
+    def video_duration(self):
+        return self.frame_duration * self.frame_count
